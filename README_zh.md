@@ -20,7 +20,7 @@
 git clone https://github.com/Lmy0217/DRML.git
 cd DRML
 ```
-* 如果需要训练好的模型和结果，请递归克隆本项目
+* 如果需要训练好的模型和结果，请递归克隆本项目（先安装 [Git LFS](https://git-lfs.github.com/)）
 
 ```shell
 git clone https://github.com/Lmy0217/DRML.git --recursive

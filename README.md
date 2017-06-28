@@ -20,7 +20,7 @@ This project is a novel deep residual metric learning (DRML) method for person r
 git clone https://github.com/Lmy0217/DRML.git
 cd DRML
 ```
-* If you need trained models and results, please recursively clone this project as
+* If you need trained models and results, please recursively clone this project as (after install [Git LFS](https://git-lfs.github.com/))
 
 ```shell
 git clone https://github.com/Lmy0217/DRML.git --recursive
