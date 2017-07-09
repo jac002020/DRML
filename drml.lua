@@ -54,15 +54,7 @@ model:add(nn.Square())
 model:add(nn.Sum(2))
 model:add(nn.Sqrt())
 
-W = torch.zeros(64, 64)
-for i = 1, 64 do
-    for j = 1, 64 do
-        if i == j then
-            W[i][j] = 1
-        end
-    end
-end
-model:get(4).weight = W:cuda()
+model:get(4).weight = torch.eye(64):cuda()
 
 model = model:cuda()
 cudnn.convert(model, cudnn)
