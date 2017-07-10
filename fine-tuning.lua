@@ -10,14 +10,16 @@ modelFile = './results/drml_0.t7'
 
 torch.setdefaulttensortype('torch.FloatTensor')
 
-testset = {
-    batchSize = 6,
-    length = 485 * 4,
+trainset = {
+    batchSize = 1,
+    classes = 485,
     data = torch.load('./datasets/cuhk01/datatrain.t7'),
     label = torch.load('./datasets/cuhk01/labeltrain.t7')
 }
+trainset.batchSize = 3 * 2 * trainset.batchSize
+trainset.length = trainset.classes * 4
 
-function testset:size()
+function trainset:size()
     return self.length
 end
 
@@ -30,23 +32,23 @@ getIndex = function(i)
     local a = (i - 1 - b) / 6
     local j = 4 * a + jIndex[b + 1]
     local k = 4 * a + kIndex[b + 1]
-    if i > 485 * 6 then
+    if i > trainset.classes * 6 then
         local t = k - (j - (j % 4))
         while (t >= 1 and t <= 4) do
-            j = math.random(testset.length)
-            k = math.random(testset.length)
+            j = math.random(trainset.length)
+            k = math.random(trainset.length)
             t = k - (j - (j % 4))
         end
     end
-    return j * (testset.length + 1) + k
+    return j * (trainset.length + 1) + k
 end
 
 pairData = torch.Tensor(2, 3, 3, 64, 64):cuda()
 
 getData = function(dataset, i, index)
     index = index or getIndex(i)
-    local k = index % (testset.length + 1)
-    local j = (index - k) / (testset.length + 1)
+    local k = index % (trainset.length + 1)
+    local j = (index - k) / (trainset.length + 1)
     pairData[{ 1, 1, {}, {}, {} }] = dataset.data[{ j, {}, {1, 64}, {} }]
     pairData[{ 1, 2, {}, {}, {} }] = dataset.data[{ j, {}, {33, 96}, {} }]
     pairData[{ 1, 3, {}, {}, {} }] = dataset.data[{ j, {}, {65, 128}, {} }]
@@ -58,42 +60,42 @@ getData = function(dataset, i, index)
     else
         pairLabel = -1
     end
-    return { pairData:clone(), pairLabel, j * (testset.length + 1) + k }
+    return { pairData:clone(), pairLabel, j * (trainset.length + 1) + k }
 end
 
-setmetatable(testset,
+setmetatable(trainset,
     {__index = function(t, i) 
         return getData(t, i)
     end}
 );
 
-batchData = torch.Tensor(testset.batchSize, 2, 3, 3, 64, 64):cuda()
-batchLabel = torch.Tensor(testset.batchSize):fill(-1):cuda()
+batchData = torch.Tensor(trainset.batchSize, 2, 3, 3, 64, 64):cuda()
+batchLabel = torch.Tensor(trainset.batchSize):fill(-1):cuda()
 
-batchCount = math.ceil(485 * 6 * 2 / testset.batchSize)
-batchIndex = torch.Tensor(testset.batchSize * batchCount):fill(0)
+batchCount = math.ceil(trainset.classes * 6 * 2 / trainset.batchSize)
+batchIndex = torch.Tensor(trainset.batchSize * batchCount):fill(0)
 
 setBatch = function(i, flag)
     flag = flag or false
-    local index = (i - 1) * testset.batchSize
+    local index = (i - 1) * trainset.batchSize
 
-    for n = 1, testset.batchSize / 2 do
+    for n = 1, trainset.batchSize / 2 do
         if not flag then
-            local data1 = getData(testset, index / 2 + n)
-            local data2 = getData(testset, 485 * 6 + index / 2 + n)
+            local data1 = getData(trainset, index / 2 + n)
+            local data2 = getData(trainset, trainset.classes * 6 + index / 2 + n)
             batchData[n]:copy(data1[1])
             batchLabel[n] = data1[2]
             batchIndex[index + n] = data1[3]
-            batchData[testset.batchSize / 2 + n]:copy(data2[1])
-            batchLabel[testset.batchSize / 2 + n] = data2[2]
-            batchIndex[index + testset.batchSize / 2 + n] = data2[3]
+            batchData[trainset.batchSize / 2 + n]:copy(data2[1])
+            batchLabel[trainset.batchSize / 2 + n] = data2[2]
+            batchIndex[index + trainset.batchSize / 2 + n] = data2[3]
         else
-            local data1 = getData(testset, nil, batchIndex[index + n])
-            local data2 = getData(testset, nil, batchIndex[index + testset.batchSize / 2 + n])
+            local data1 = getData(trainset, nil, batchIndex[index + n])
+            local data2 = getData(trainset, nil, batchIndex[index + trainset.batchSize / 2 + n])
             batchData[n]:copy(data1[1])
             batchLabel[n] = data1[2]
-            batchData[testset.batchSize / 2 + n]:copy(data2[1])
-            batchLabel[testset.batchSize / 2 + n] = data2[2]
+            batchData[trainset.batchSize / 2 + n]:copy(data2[1])
+            batchLabel[trainset.batchSize / 2 + n] = data2[2]
         end
     end
 end
@@ -111,8 +113,8 @@ local optimState = {
     learningRate = 0.001
 }
 
-output = torch.Tensor(testset.batchSize * batchCount):cuda()
-trueLabel = torch.Tensor(testset.batchSize * batchCount):cuda()
+output = torch.Tensor(trainset.batchSize * batchCount):cuda()
+trueLabel = torch.Tensor(trainset.batchSize * batchCount):cuda()
 
 print('Fine-tuning start ...')
 io.output("./results/fine-tuning.log")
@@ -122,8 +124,8 @@ for epoch = 1, 160 do
 
         for i = 1, batchCount do
             setBatch(i)
-            output[{ {(i - 1) * testset.batchSize + 1, i * testset.batchSize} }]:copy(model:forward(batchData))
-            trueLabel[{ {(i - 1) * testset.batchSize + 1, i * testset.batchSize} }]:copy(batchLabel)
+            output[{ {(i - 1) * trainset.batchSize + 1, i * trainset.batchSize} }]:copy(model:forward(batchData))
+            trueLabel[{ {(i - 1) * trainset.batchSize + 1, i * trainset.batchSize} }]:copy(batchLabel)
             collectgarbage();
         end
 
@@ -133,7 +135,7 @@ for epoch = 1, 160 do
         for i = 1, batchCount do
             setBatch(i, true)
             model:forward(batchData)
-            model:backward(batchData, dloss_doutputs[{ {(i - 1) * testset.batchSize + 1, i * testset.batchSize} }])
+            model:backward(batchData, dloss_doutputs[{ {(i - 1) * trainset.batchSize + 1, i * trainset.batchSize} }])
             collectgarbage();
         end
 
