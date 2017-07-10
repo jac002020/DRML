@@ -11,12 +11,12 @@ modelFile = './results/drml_0.t7'
 torch.setdefaulttensortype('torch.FloatTensor')
 
 trainset = {
-    batchSize = 1,
+    batchSize = 3,
     classes = 485,
     data = torch.load('./datasets/cuhk01/datatrain.t7'),
     label = torch.load('./datasets/cuhk01/labeltrain.t7')
 }
-trainset.batchSize = 3 * 2 * trainset.batchSize
+trainset.batchSize = 2 * trainset.batchSize
 trainset.length = trainset.classes * 4
 
 function trainset:size()
