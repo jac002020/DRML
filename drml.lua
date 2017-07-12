@@ -8,7 +8,7 @@ require 'cudnn'
 preTrainModelFile = './results/pre-training/cnn_current.t7'
 local _RESIDUAL_ = true
 
-local function residual(branches, count)
+local function deep(branches, count)
     local triplet_residual = nn.Parallel(2, 2)
     for i = 1, branches:size() do
         local m = branches:get(i)
@@ -16,13 +16,17 @@ local function residual(branches, count)
         local layer = nn.Sequential()
         for j = 1, count do
             local block = nn.Sequential()
-            block:add(nn.ConcatTable()
-                :add(m:clone())
-                :add(nn.Sequential()
-                    :add(nn.SpatialConvolution(3, 3, 1, 1, 1, 1))
-                    :add(nn.SpatialBatchNormalization(3))))
-            block:add(nn.CAddTable())
-            block:add(nn.ReLU())
+            if (_RESIDUAL_) then
+                block:add(nn.ConcatTable()
+                    :add(m:clone())
+                    :add(nn.Sequential()
+                        :add(nn.SpatialConvolution(3, 3, 1, 1, 1, 1))
+                        :add(nn.SpatialBatchNormalization(3))))
+                block:add(nn.CAddTable())
+                block:add(nn.ReLU())
+            else
+                block:add(m:clone())
+            end
             layer:add(block)
         end
         triplet_residual:add(layer)
@@ -36,10 +40,8 @@ preTrainModel = torch.load(preTrainModelFile)
 preTrainModel:remove(7)
 preTrainModel:remove(6)
    
-if (_RESIDUAL_) then
-    preTrainModel:insert(residual(preTrainModel:get(1), 3), 2)
-    preTrainModel:remove(1)
-end
+preTrainModel:insert(deep(preTrainModel:get(1), 3), 2)
+preTrainModel:remove(1)
 
 local siamese_cnns = nn.ParallelTable()
 siamese_cnns:add(preTrainModel)
