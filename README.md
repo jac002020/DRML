@@ -24,7 +24,7 @@ different models P-R curves on CUHK01 testset
 
 ![](./pr.jpg)
 
-DRML could get higher P-R curve with more time.
+DRML_CKT could get higher P-R curve with more time.
 
 ## Citation
 If you find this branch useful in your research, please consider citing:
