@@ -1,0 +1,126 @@
+local CLinear, parent = torch.class('nn.CLinear', 'nn.Module')
+
+function CLinear:__init(inputSize, outputSize, bias)
+   parent.__init(self)
+   local bias = ((bias == nil) and true) or bias
+   self.weight = torch.Tensor(outputSize, inputSize)
+   self.gradWeight = torch.Tensor(outputSize, inputSize)
+   if bias then
+      self.bias = torch.Tensor(outputSize)
+      self.gradBias = torch.Tensor(outputSize)
+   end
+   self.lambda = lambda or 0.01
+   self:reset()
+end
+
+function CLinear:noBias()
+   self.bias = nil
+   self.gradBias = nil
+   return self
+end
+
+function CLinear:reset(stdv)
+   if stdv then
+      stdv = stdv * math.sqrt(3)
+   else
+      stdv = 1./math.sqrt(self.weight:size(2))
+   end
+   if nn.oldSeed then
+      for i=1,self.weight:size(1) do
+         self.weight:select(1, i):apply(function()
+            return torch.uniform(-stdv, stdv)
+         end)
+      end
+      if self.bias then
+         for i=1,self.bias:nElement() do
+            self.bias[i] = torch.uniform(-stdv, stdv)
+         end
+      end
+   else
+      self.weight:uniform(-stdv, stdv)
+      if self.bias then self.bias:uniform(-stdv, stdv) end
+   end
+   return self
+end
+
+function CLinear:updateAddBuffer(input)
+   local nframe = input:size(1)
+   self.addBuffer = self.addBuffer or input.new()
+   if self.addBuffer:nElement() ~= nframe then
+      self.addBuffer:resize(nframe):fill(1)
+   end
+end
+
+function CLinear:updateOutput(input)
+   if input:dim() == 1 then
+      self.output:resize(self.weight:size(1))
+      if self.bias then self.output:copy(self.bias) else self.output:zero() end
+      self.output:addmv(1, self.weight, input)
+   elseif input:dim() == 2 then
+      local nframe = input:size(1)
+      local nElement = self.output:nElement()
+      self.output:resize(nframe, self.weight:size(1))
+      if self.output:nElement() ~= nElement then
+         self.output:zero()
+      end
+      self:updateAddBuffer(input)
+      self.output:addmm(0, self.output, 1, input, self.weight:t())
+      if self.bias then self.output:addr(1, self.addBuffer, self.bias) end
+   else
+      error('input must be vector or matrix')
+   end
+
+   return self.output
+end
+
+function CLinear:updateGradInput(input, gradOutput)
+   if self.gradInput then
+
+      local nElement = self.gradInput:nElement()
+      self.gradInput:resizeAs(input)
+      if self.gradInput:nElement() ~= nElement then
+         self.gradInput:zero()
+      end
+      if input:dim() == 1 then
+         self.gradInput:addmv(0, 1, self.weight:t(), gradOutput)
+      elseif input:dim() == 2 then
+         self.gradInput:addmm(0, 1, gradOutput, self.weight)
+      end
+
+      return self.gradInput
+   end
+end
+
+function CLinear:accGradParameters(input, gradOutput, scale)
+   scale = scale or 1
+   local regular = torch.addmm(-torch.eye(self.weight:size(1)):cuda(), self.weight, self.weight:t())
+   if input:dim() == 1 then
+      self.gradWeight:addr(scale, gradOutput, input)
+      self.gradWeight:addmm(scale * self.lambda, regular, self.weight)
+      if self.bias then self.gradBias:add(scale, gradOutput) end
+   elseif input:dim() == 2 then
+      self.gradWeight:addmm(scale, gradOutput:t(), input)
+      self.gradWeight:addmm(scale * self.lambda, regular, self.weight)
+      if self.bias then
+         -- update the size of addBuffer if the input is not the same size as the one we had in last updateGradInput
+         self:updateAddBuffer(input)
+         self.gradBias:addmv(scale, gradOutput:t(), self.addBuffer)
+      end
+   end
+end
+
+function CLinear:sharedAccUpdateGradParameters(input, gradOutput, lr)
+   -- we do not need to accumulate parameters when sharing:
+   self:defaultAccUpdateGradParameters(input, gradOutput, lr)
+end
+
+function CLinear:clearState()
+   if self.addBuffer then self.addBuffer:set() end
+   return parent.clearState(self)
+end
+
+function CLinear:__tostring__()
+  return torch.type(self) ..
+      string.format('(%d -> %d)', self.weight:size(2), self.weight:size(1)) ..
+      (self.bias == nil and ' without bias' or '')
+end
