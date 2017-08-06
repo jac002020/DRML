@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-本分支是 [master 分支]()的额外模块，其中 DRML 模型使用改进的 [Continuous Kendall–Tau](http://www.sciencedirect.com/science/article/pii/S0165168415002686) (CKT) 损失函数进行训练。**如果需要使用本分支，请先在 master 分支内完成预训练后，再在本分支内完成微调**。
+本分支是 [master 分支](https://github.com/Lmy0217/DRML)的额外模块，其中 DRML 模型使用改进的 [Continuous Kendall–Tau](http://www.sciencedirect.com/science/article/pii/S0165168415002686) (CKT) 损失函数进行训练。**如果需要使用本分支，请先在 master 分支内完成预训练后，再在本分支内完成微调**。
 
 在 master 分支主文件夹 `DRML` 内克隆本分支
 
@@ -38,4 +38,4 @@ DRML_CKT 模型增加实验时间可以获得更高的 P-R 曲线。
 ```
 
 ## 许可证
-继承 [master 分支许可证]()。
+继承 [master 分支许可证](https://github.com/Lmy0217/DRML/blob/master/LICENSE)。

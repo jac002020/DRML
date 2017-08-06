@@ -2,7 +2,7 @@
 
 [中文](README_zh.md)
 
-This branch is extra module which is based on [master branch](), in which DRML model use modified [Continuous Kendall–Tau](http://www.sciencedirect.com/science/article/pii/S0165168415002686) (CKT) loss function to train. **If you want to use this branch, please pre-training in master branch before fine-tuning in this branch**.
+This branch is extra module which is based on [master branch](https://github.com/Lmy0217/DRML), in which DRML model use modified [Continuous Kendall–Tau](http://www.sciencedirect.com/science/article/pii/S0165168415002686) (CKT) loss function to train. **If you want to use this branch, please pre-training in master branch before fine-tuning in this branch**.
 
 Clone this branch in master branch home folder `DRML` as
 
@@ -38,4 +38,4 @@ If you find this branch useful in your research, please consider citing:
 ```
 
 ## License
-Inherit from [master branch license]()。
+Inherit from [master branch license](https://github.com/Lmy0217/DRML/blob/master/LICENSE)。
