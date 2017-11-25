@@ -1,4 +1,4 @@
-# Continuous Kendall–Tau branch
+# FullScale branch
 
 [中文](README_zh.md)
 
