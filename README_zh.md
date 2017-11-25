@@ -30,7 +30,7 @@ th cnn.lua
 
 不同模型在 CUHK01 测试集上的 P-R 曲线
 
-![](./pr.eps)
+![](./pr.jpg)
 
 FullScale 模型增加实验时间可以获得更高的 P-R 曲线。
 

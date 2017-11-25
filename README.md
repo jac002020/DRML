@@ -30,7 +30,7 @@ The fine-tuning steps are the same with master branch (in this branch home folde
 
 different models P-R curves on CUHK01 testset
 
-![](./pr.eps)
+![](./pr.jpg)
 
 FullScale could get higher P-R curve with more time.
 
